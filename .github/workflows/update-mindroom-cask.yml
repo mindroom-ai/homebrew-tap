@@ -1,0 +1,52 @@
+name: Update MindRoom cask
+
+on:
+  schedule:
+    - cron: "23 8 * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [mindroom-release]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-mindroom-cask
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update cask from release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/update_mindroom_cask.py
+
+      - name: Validate cask
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
+        run: |
+          brew tap mindroom-ai/tap
+          tap_dir="$(brew --repo mindroom-ai/tap)"
+          cp Casks/mindroom.rb "$tap_dir/Casks/mindroom.rb"
+          brew style --cask mindroom-ai/tap/mindroom
+          brew audit --cask --online mindroom-ai/tap/mindroom
+          brew install --cask --dry-run mindroom-ai/tap/mindroom
+
+      - name: Commit and push update
+        run: |
+          if git diff --quiet -- Casks/mindroom.rb; then
+            echo "No cask update needed."
+            exit 0
+          fi
+
+          version="$(ruby -ne 'puts $1 if /^  version "([^"]+)"/ =~ $_' Casks/mindroom.rb)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/mindroom.rb
+          git commit -m "Update MindRoom cask to v${version}"
+          git push
