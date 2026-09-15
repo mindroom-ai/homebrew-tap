@@ -1,6 +1,6 @@
 cask "mindroom" do
-  version "2026.9.147"
-  sha256 "82c21388187c5d17b861a86e4dafc998b82ea1db6484a67331595fc604e2638a"
+  version "2026.9.152"
+  sha256 "61a1162122a000c9aee75adb7ed67154d4c4b1d8099e237a2a083c234c2a91da"
 
   url "https://github.com/mindroom-ai/mindroom/releases/download/v#{version}/MindRoom.dmg"
   name "MindRoom"
@@ -12,7 +12,7 @@ cask "mindroom" do
     strategy :github_latest
   end
 
-  depends_on macos: :ventura
+  depends_on macos: :sonoma
 
   app "MindRoom.app"
 
