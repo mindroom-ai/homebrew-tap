@@ -7,8 +7,10 @@ cask "mindroom-chat" do
   desc "Matrix chat client for MindRoom AI agents"
   homepage "https://github.com/mindroom-ai/mindroom-chat"
 
+  # Keep the -mindroom.N suffix; the default regex stops at 4.12.6.
   livecheck do
     url :url
+    regex(/^v?(\d+(?:\.\d+)+-mindroom\.\d+)$/i)
     strategy :github_latest
   end
 

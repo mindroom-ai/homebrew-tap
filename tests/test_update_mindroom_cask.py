@@ -102,10 +102,14 @@ class CaskSelectionTests(unittest.TestCase):
             requested_urls.append(url)
             return latest
 
+        def fake_download_sha256(url: str) -> str:
+            requested_urls.append(url)
+            return "a" * 64
+
         with (
             patch.dict(update_mindroom_cask.CASKS, {cask_name: (repo, asset_name, self.cask_path)}),
             patch.object(update_mindroom_cask, "api_json", fake_api_json),
-            patch.object(update_mindroom_cask, "download_sha256", return_value="a" * 64),
+            patch.object(update_mindroom_cask, "download_sha256", fake_download_sha256),
             patch.object(sys, "argv", ["update_mindroom_cask.py", *argv]),
         ):
             update_mindroom_cask.main()
@@ -128,7 +132,11 @@ class CaskSelectionTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            urls, ["https://api.github.com/repos/mindroom-ai/mindroom-chat/releases/latest"]
+            urls,
+            [
+                "https://api.github.com/repos/mindroom-ai/mindroom-chat/releases/latest",
+                "https://example.com/v4.12.6-mindroom.268/MindRoom-Chat.dmg",
+            ],
         )
         self.assertEqual(
             self.cask_path.read_text(encoding="utf-8"),
@@ -146,7 +154,13 @@ class CaskSelectionTests(unittest.TestCase):
     def test_default_cask_is_mindroom(self) -> None:
         urls = self.run_main([], release("v2026.10.700", "MindRoom.dmg"))
 
-        self.assertEqual(urls, ["https://api.github.com/repos/mindroom-ai/mindroom/releases/latest"])
+        self.assertEqual(
+            urls,
+            [
+                "https://api.github.com/repos/mindroom-ai/mindroom/releases/latest",
+                "https://example.com/v2026.10.700/MindRoom.dmg",
+            ],
+        )
         self.assertIn('version "2026.10.700"', self.cask_path.read_text(encoding="utf-8"))
 
     def test_chat_cask_file_is_updatable(self) -> None:
