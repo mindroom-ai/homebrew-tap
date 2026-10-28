@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -68,6 +69,94 @@ class ReleaseSourceTests(unittest.TestCase):
         workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
 
         self.assertIn("HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}", workflow)
+
+
+def release(tag_name: str, *asset_names: str) -> dict[str, object]:
+    return {
+        "tag_name": tag_name,
+        "assets": [
+            {"name": name, "browser_download_url": f"https://example.com/{tag_name}/{name}"}
+            for name in asset_names
+        ],
+    }
+
+
+class CaskSelectionTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp_dir.cleanup)
+        self.cask_path = Path(self.tmp_dir.name) / "cask.rb"
+        self.cask_path.write_text(
+            '  version "0"\n  sha256 "' + "0" * 64 + '"\n', encoding="utf-8"
+        )
+        self.env = patch.dict(os.environ, {"GITHUB_EVENT_NAME": "schedule"}, clear=False)
+        self.env.start()
+        self.addCleanup(self.env.stop)
+
+    def run_main(self, argv: list[str], latest: dict[str, object]) -> list[str]:
+        cask_name = argv[argv.index("--cask") + 1] if "--cask" in argv else "mindroom"
+        repo, asset_name, _ = update_mindroom_cask.CASKS[cask_name]
+        requested_urls: list[str] = []
+
+        def fake_api_json(url: str) -> dict[str, object]:
+            requested_urls.append(url)
+            return latest
+
+        with (
+            patch.dict(update_mindroom_cask.CASKS, {cask_name: (repo, asset_name, self.cask_path)}),
+            patch.object(update_mindroom_cask, "api_json", fake_api_json),
+            patch.object(update_mindroom_cask, "download_sha256", return_value="a" * 64),
+            patch.object(sys, "argv", ["update_mindroom_cask.py", *argv]),
+        ):
+            update_mindroom_cask.main()
+        return requested_urls
+
+    def test_chat_cask_maps_to_chat_repo_asset_and_file(self) -> None:
+        self.assertEqual(
+            update_mindroom_cask.CASKS["mindroom-chat"],
+            (
+                "mindroom-ai/mindroom-chat",
+                "MindRoom-Chat.dmg",
+                update_mindroom_cask.ROOT / "Casks" / "mindroom-chat.rb",
+            ),
+        )
+
+    def test_chat_cask_uses_chat_repo_and_asset(self) -> None:
+        urls = self.run_main(
+            ["--cask", "mindroom-chat"],
+            release("v4.12.6-mindroom.268", "MindRoom.dmg", "MindRoom-Chat.dmg"),
+        )
+
+        self.assertEqual(
+            urls, ["https://api.github.com/repos/mindroom-ai/mindroom-chat/releases/latest"]
+        )
+        self.assertEqual(
+            self.cask_path.read_text(encoding="utf-8"),
+            '  version "4.12.6-mindroom.268"\n  sha256 "' + "a" * 64 + '"\n',
+        )
+
+    def test_chat_release_without_dmg_raises(self) -> None:
+        before = self.cask_path.read_bytes()
+
+        with self.assertRaisesRegex(RuntimeError, "has no MindRoom-Chat.dmg asset"):
+            self.run_main(["--cask", "mindroom-chat"], release("v4.12.6-mindroom.269", "MindRoom.dmg"))
+
+        self.assertEqual(self.cask_path.read_bytes(), before)
+
+    def test_default_cask_is_mindroom(self) -> None:
+        urls = self.run_main([], release("v2026.10.700", "MindRoom.dmg"))
+
+        self.assertEqual(urls, ["https://api.github.com/repos/mindroom-ai/mindroom/releases/latest"])
+        self.assertIn('version "2026.10.700"', self.cask_path.read_text(encoding="utf-8"))
+
+    def test_chat_cask_file_is_updatable(self) -> None:
+        cask_path = update_mindroom_cask.CASKS["mindroom-chat"][2]
+
+        updated = update_mindroom_cask.update_cask_text(
+            cask_path.read_text(encoding="utf-8"), version="v4.12.6-mindroom.268", sha256="b" * 64
+        )
+
+        self.assertIn('version "4.12.6-mindroom.268"', updated)
 
 
 if __name__ == "__main__":

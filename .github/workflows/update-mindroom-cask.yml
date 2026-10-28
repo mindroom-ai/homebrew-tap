@@ -11,7 +11,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: update-mindroom-cask
+  # Shared with update-mindroom-chat-cask.yml, so pushes to the tap never race.
+  group: update-casks
   cancel-in-progress: false
 
 jobs:

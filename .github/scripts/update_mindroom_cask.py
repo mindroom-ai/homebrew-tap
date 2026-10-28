@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Update the MindRoom cask from the latest GitHub release."""
+"""Update a MindRoom cask from its latest GitHub release."""
 
 from __future__ import annotations
 
@@ -13,10 +13,16 @@ import tempfile
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-REPO = "mindroom-ai/mindroom"
-ASSET_NAME = "MindRoom.dmg"
 ROOT = Path(__file__).resolve().parents[2]
-CASK_PATH = ROOT / "Casks" / "mindroom.rb"
+# Cask name: (GitHub repository, release asset, cask file).
+CASKS: dict[str, tuple[str, str, Path]] = {
+    "mindroom": ("mindroom-ai/mindroom", "MindRoom.dmg", ROOT / "Casks" / "mindroom.rb"),
+    "mindroom-chat": (
+        "mindroom-ai/mindroom-chat",
+        "MindRoom-Chat.dmg",
+        ROOT / "Casks" / "mindroom-chat.rb",
+    ),
+}
 VERSION_RE = re.compile(r'^(?P<indent>\s*)version "[^"]+"$')
 SHA256_RE = re.compile(r'^(?P<indent>\s*)sha256 "[0-9a-f]{64}"$')
 
@@ -35,8 +41,8 @@ def api_json(url: str) -> dict[str, object]:
         return json.load(response)
 
 
-def latest_release() -> tuple[str, str]:
-    release = api_json(f"https://api.github.com/repos/{REPO}/releases/latest")
+def latest_release(repo: str, asset_name: str) -> tuple[str, str]:
+    release = api_json(f"https://api.github.com/repos/{repo}/releases/latest")
     tag_name = str(release["tag_name"])
     version = normalize_version(tag_name)
     assets = release.get("assets", [])
@@ -46,10 +52,10 @@ def latest_release() -> tuple[str, str]:
     for asset in assets:
         if not isinstance(asset, dict):
             continue
-        if asset.get("name") == ASSET_NAME:
+        if asset.get("name") == asset_name:
             return version, str(asset["browser_download_url"])
 
-    raise RuntimeError(f"Latest release {tag_name} has no {ASSET_NAME} asset")
+    raise RuntimeError(f"Latest release {tag_name} has no {asset_name} asset")
 
 
 def normalize_version(value: str) -> str:
@@ -146,19 +152,21 @@ def update_cask_file(path: Path, *, version: str, sha256: str) -> bool:
     updated = update_cask_text(text, version=version, sha256=sha256)
 
     if updated == text:
-        print(f"mindroom cask already up to date at {version}")
+        print(f"{path.stem} cask already up to date at {version}")
         return False
 
     path.write_text(updated, encoding="utf-8")
-    print(f"updated mindroom cask to {version}")
+    print(f"updated {path.stem} cask to {version}")
     return True
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--cask", choices=sorted(CASKS), default="mindroom", help="Cask to update")
     parser.add_argument("--version", help="Release version without leading v")
-    parser.add_argument("--asset-url", help=f"Download URL for {ASSET_NAME}")
+    parser.add_argument("--asset-url", help="Download URL for the cask's release asset")
     args = parser.parse_args()
+    repo, asset_name, cask_path = CASKS[args.cask]
 
     dispatch_release = release_from_dispatch_event()
     if args.version or args.asset_url:
@@ -169,10 +177,10 @@ def main() -> int:
     elif dispatch_release:
         version, asset_url = dispatch_release
     else:
-        version, asset_url = latest_release()
+        version, asset_url = latest_release(repo, asset_name)
 
     sha256 = download_sha256(asset_url)
-    update_cask_file(CASK_PATH, version=version, sha256=sha256)
+    update_cask_file(cask_path, version=version, sha256=sha256)
     return 0
 
 
