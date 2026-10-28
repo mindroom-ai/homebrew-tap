@@ -9,7 +9,7 @@ Homebrew tap for [MindRoom](https://github.com/mindroom-ai/mindroom) and [MindRo
 
 ## Install
 
-The MindRoom menu bar app, which runs your agents:
+The MindRoom macOS app, for local agents and computer access:
 
 ```bash
 brew install --cask mindroom-ai/tap/mindroom
