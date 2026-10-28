@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 concurrency:
-  # Shared with update-mindroom-cask.yml, so pushes to the tap never race.
+  # Shared with update-mindroom-cask.yml, so only one cask update pushes at a time.
   group: update-casks
   cancel-in-progress: false
 
@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # A queued run starts from the current tip, not the commit it was triggered at.
+          ref: main
 
       - name: Update cask from release
         env:
