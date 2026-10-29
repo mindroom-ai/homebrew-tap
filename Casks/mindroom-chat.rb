@@ -18,9 +18,13 @@ cask "mindroom-chat" do
 
   app "MindRoom Chat.app"
 
+  # Leave ~/Library/Containers/chat.mindroom.app: it belongs to the App Store app.
   zap trash: [
     "~/Library/Caches/chat.mindroom.app",
+    "~/Library/HTTPStorages/chat.mindroom.app",
+    "~/Library/HTTPStorages/chat.mindroom.app.binarycookies",
     "~/Library/Preferences/chat.mindroom.app.plist",
+    "~/Library/Saved Application State/chat.mindroom.app~iosmac.savedState",
     "~/Library/WebKit/chat.mindroom.app",
   ]
 end
