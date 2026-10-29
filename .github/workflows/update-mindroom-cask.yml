@@ -11,6 +11,7 @@ permissions:
   contents: write
 
 concurrency:
+  # One group per cask: a shared group would cancel the other cask's pending run.
   group: update-mindroom-cask
   cancel-in-progress: false
 
@@ -20,6 +21,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # A queued run starts from the current tip, not the commit it was triggered at.
+          ref: main
 
       - name: Update cask from release
         env:
@@ -49,4 +53,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Casks/mindroom.rb
           git commit -m "Update MindRoom cask to v${version}"
+          # The other cask's workflow may have pushed meanwhile; it edits another file.
+          git pull --rebase origin main
           git push

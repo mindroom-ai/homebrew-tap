@@ -5,10 +5,18 @@
   <img src="https://raw.githubusercontent.com/mindroom-ai/mindroom/main/assets/logo/logo-mark.svg" alt="MindRoom Logo" align="right" width="120" />
 </picture>
 
-Homebrew tap for [MindRoom](https://github.com/mindroom-ai/mindroom).
+Homebrew tap for [MindRoom](https://github.com/mindroom-ai/mindroom) and [MindRoom Chat](https://github.com/mindroom-ai/mindroom-chat).
 
 ## Install
 
+The MindRoom macOS app, for local agents and computer access:
+
 ```bash
 brew install --cask mindroom-ai/tap/mindroom
+```
+
+MindRoom Chat, the chat app for MindRoom agents:
+
+```bash
+brew install --cask mindroom-ai/tap/mindroom-chat
 ```
