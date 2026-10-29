@@ -11,8 +11,8 @@ permissions:
   contents: write
 
 concurrency:
-  # Shared with update-mindroom-chat-cask.yml, so only one cask update pushes at a time.
-  group: update-casks
+  # One group per cask: a shared group would cancel the other cask's pending run.
+  group: update-mindroom-cask
   cancel-in-progress: false
 
 jobs:
@@ -53,4 +53,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Casks/mindroom.rb
           git commit -m "Update MindRoom cask to v${version}"
+          # The other cask's workflow may have pushed meanwhile; it edits another file.
+          git pull --rebase origin main
           git push

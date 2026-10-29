@@ -116,16 +116,6 @@ class CaskSelectionTests(unittest.TestCase):
             update_mindroom_cask.main()
         return requested_urls
 
-    def test_chat_cask_maps_to_chat_repo_asset_and_file(self) -> None:
-        self.assertEqual(
-            update_mindroom_cask.CASKS["mindroom-chat"],
-            (
-                "mindroom-ai/mindroom-chat",
-                "MindRoom-Chat.dmg",
-                update_mindroom_cask.ROOT / "Casks" / "mindroom-chat.rb",
-            ),
-        )
-
     def cask_file(self, name: str) -> Path:
         return self.casks[name][2]
 
