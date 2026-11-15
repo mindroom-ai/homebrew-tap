@@ -7,9 +7,18 @@ cask "mindroom" do
   desc "Menu bar app for local MindRoom agent service management"
   homepage "https://github.com/mindroom-ai/mindroom"
 
+  # The newest release that has the DMG, as the updater picks it: a release gets its DMG from a
+  # macOS build that ends after it is published, and none when that build fails.
   livecheck do
     url :url
-    strategy :github_latest
+    strategy :github_releases do |json, regex|
+      json.map do |release|
+        next if release["draft"] || release["prerelease"]
+        next unless release["assets"]&.any? { |asset| asset["name"] == "MindRoom.dmg" }
+
+        release["tag_name"]&.[](regex, 1)
+      end
+    end
   end
 
   depends_on arch: :arm64
