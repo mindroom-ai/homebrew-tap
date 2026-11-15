@@ -35,6 +35,8 @@ jobs:
           HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
         run: |
           brew tap mindroom-ai/tap
+          # Homebrew 6 loads nothing from a non-official tap until it is trusted.
+          brew trust --cask mindroom-ai/tap/mindroom-chat
           tap_dir="$(brew --repo mindroom-ai/tap)"
           cp Casks/mindroom-chat.rb "$tap_dir/Casks/mindroom-chat.rb"
           brew style --cask mindroom-ai/tap/mindroom-chat

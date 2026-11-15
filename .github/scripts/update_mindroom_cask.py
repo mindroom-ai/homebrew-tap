@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Update a MindRoom cask from its latest GitHub release."""
+"""Update a MindRoom cask from the newest GitHub release that carries its DMG."""
 
 from __future__ import annotations
 
@@ -17,17 +17,13 @@ ROOT = Path(__file__).resolve().parents[2]
 # Cask name: (GitHub repository, release asset, cask file).
 CASKS: dict[str, tuple[str, str, Path]] = {
     "mindroom": ("mindroom-ai/mindroom", "MindRoom.dmg", ROOT / "Casks" / "mindroom.rb"),
-    "mindroom-chat": (
-        "mindroom-ai/mindroom-chat",
-        "MindRoom-Chat.dmg",
-        ROOT / "Casks" / "mindroom-chat.rb",
-    ),
+    "mindroom-chat": ("mindroom-ai/mindroom-chat", "MindRoom.dmg", ROOT / "Casks" / "mindroom-chat.rb"),
 }
 VERSION_RE = re.compile(r'^(?P<indent>\s*)version "[^"]+"$')
 SHA256_RE = re.compile(r'^(?P<indent>\s*)sha256 "[0-9a-f]{64}"$')
 
 
-def api_json(url: str) -> dict[str, object]:
+def api_json(url: str) -> object:
     headers = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
@@ -42,20 +38,24 @@ def api_json(url: str) -> dict[str, object]:
 
 
 def latest_release(repo: str, asset_name: str) -> tuple[str, str]:
-    release = api_json(f"https://api.github.com/repos/{repo}/releases/latest")
-    tag_name = str(release["tag_name"])
-    version = normalize_version(tag_name)
-    assets = release.get("assets", [])
-    if not isinstance(assets, list):
-        raise RuntimeError("Latest release has no assets list")
+    # A release gets its DMG from a macOS build that finishes after the release is published, and
+    # never gets one when that build fails, so the newest release can lack it.
+    releases = api_json(f"https://api.github.com/repos/{repo}/releases?per_page=30")
+    if not isinstance(releases, list):
+        raise RuntimeError(f"{repo} releases response is not a list")
 
-    for asset in assets:
-        if not isinstance(asset, dict):
+    for release in releases:
+        if not isinstance(release, dict) or release.get("draft") or release.get("prerelease"):
             continue
-        if asset.get("name") == asset_name:
-            return version, str(asset["browser_download_url"])
+        assets = release.get("assets", [])
+        if not isinstance(assets, list):
+            continue
+        for asset in assets:
+            if isinstance(asset, dict) and asset.get("name") == asset_name:
+                version = normalize_version(str(release["tag_name"]))
+                return version, str(asset["browser_download_url"])
 
-    raise RuntimeError(f"Latest release {tag_name} has no {asset_name} asset")
+    raise RuntimeError(f"None of the last {len(releases)} {repo} releases has a {asset_name} asset")
 
 
 def normalize_version(value: str) -> str:
