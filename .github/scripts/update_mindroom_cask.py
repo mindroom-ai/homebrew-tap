@@ -37,9 +37,10 @@ def api_json(url: str) -> object:
         return json.load(response)
 
 
-def latest_release(repo: str, asset_name: str) -> tuple[str, str]:
+def newest_release_with_asset(repo: str, asset_name: str) -> tuple[str, str]:
     # A release gets its DMG from a macOS build that finishes after the release is published, and
-    # never gets one when that build fails, so the newest release can lack it.
+    # never gets one when that build fails, so the newest release can lack it. The casks' livecheck
+    # picks the same release, or `brew audit --online` fails on the version.
     releases = api_json(f"https://api.github.com/repos/{repo}/releases?per_page=30")
     if not isinstance(releases, list):
         raise RuntimeError(f"{repo} releases response is not a list")
@@ -177,7 +178,7 @@ def main() -> int:
     elif dispatch_release:
         version, asset_url = dispatch_release
     else:
-        version, asset_url = latest_release(repo, asset_name)
+        version, asset_url = newest_release_with_asset(repo, asset_name)
 
     sha256 = download_sha256(asset_url)
     update_cask_file(cask_path, version=version, sha256=sha256)
