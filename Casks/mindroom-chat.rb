@@ -14,7 +14,8 @@ cask "mindroom-chat" do
     strategy :github_releases do |json, regex|
       json.map do |release|
         next if release["draft"] || release["prerelease"]
-        next unless release["assets"]&.any? { |asset| asset["name"] == "MindRoom.dmg" }
+        # MindRoom-Chat.dmg, or MindRoom.dmg for releases from before the rename.
+        next unless release["assets"]&.any? { |asset| asset["name"]&.match?(/\AMindRoom(?:-Chat)?\.dmg\z/) }
 
         release["tag_name"]&.[](regex, 1)
       end
@@ -23,7 +24,9 @@ cask "mindroom-chat" do
 
   depends_on macos: :ventura
 
-  # The DMG holds MindRoom.app, the name the MindRoom cask's menu bar app also installs as.
+  # The updater writes this stanza and the url's file name from the release's DMG: MindRoom-Chat.dmg
+  # holds MindRoom Chat.app; the MindRoom.dmg of older releases holds MindRoom.app, the name the
+  # MindRoom cask's menu bar app also installs as.
   app "MindRoom.app", target: "MindRoom Chat.app"
 
   # Leave ~/Library/Containers/chat.mindroom.app: it belongs to the App Store app.
