@@ -1,8 +1,8 @@
 cask "mindroom-chat" do
-  version "2026.11.302"
-  sha256 "004d6a678db522571f2b504b31520a398b869dfc6fd425b204c6b5cab1a14e14"
+  version "2026.11.303"
+  sha256 "6ab78632f1c6f51a2c808899f1b34922d734b9a9492515f90eb478f8f182575a"
 
-  url "https://github.com/mindroom-ai/mindroom-chat/releases/download/v#{version}/MindRoom.dmg"
+  url "https://github.com/mindroom-ai/mindroom-chat/releases/download/v#{version}/MindRoom-Chat.dmg"
   name "MindRoom Chat"
   desc "Matrix chat client for MindRoom AI agents"
   homepage "https://github.com/mindroom-ai/mindroom-chat"
@@ -27,7 +27,7 @@ cask "mindroom-chat" do
   # The updater writes this stanza and the url's file name from the release's DMG: MindRoom-Chat.dmg
   # holds MindRoom Chat.app; the MindRoom.dmg of older releases holds MindRoom.app, the name the
   # MindRoom cask's menu bar app also installs as.
-  app "MindRoom.app", target: "MindRoom Chat.app"
+  app "MindRoom Chat.app"
 
   # Leave ~/Library/Containers/chat.mindroom.app: it belongs to the App Store app.
   zap trash: [
