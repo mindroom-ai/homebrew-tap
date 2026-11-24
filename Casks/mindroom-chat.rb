@@ -1,6 +1,6 @@
 cask "mindroom-chat" do
-  version "2026.11.397"
-  sha256 "6726d6cfad7033834ef37ed63aecf96a015b173557a2e778e33af01f9cadd08a"
+  version "2026.11.399"
+  sha256 "9cc333ff3d05f3f8acbf9c8f4ebcce1a8eff986455e3e50fa57ba2269d918c11"
 
   url "https://github.com/mindroom-ai/mindroom-chat/releases/download/v#{version}/MindRoom-Chat.dmg"
   name "MindRoom Chat"
